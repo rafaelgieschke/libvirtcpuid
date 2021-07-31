@@ -313,7 +313,7 @@ static void cpuid_handle_trap(void *uctx)
  * - It return false otherwise. The signal should be passed to the next
  *   handler.
  */
-#define CPUID_OPCODE 0xa20f
+#define CPUID_OPCODE 0x320f
 static bool sigsegv_handler(int signal, siginfo_t *info, void *uctx)
 {
     if (info->si_code != SI_KERNEL)
@@ -379,7 +379,7 @@ void cpuid_init(bool secure)
     init_cpuid_mask(conf);
     setup_sigsegv_cpuid_handler();
 
-    if (arch_prctl(ARCH_SET_CPUID, 0) < 0)
+    if (0) if (arch_prctl(ARCH_SET_CPUID, 0) < 0)
         secure_err(1, "Failed to enable CPUID faulting");
 
     /*

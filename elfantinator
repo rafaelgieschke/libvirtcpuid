@@ -1,0 +1,14 @@
+#!/bin/sh -u
+targetDir="$1"
+
+find "$targetDir" -executable -type f | while read elf; do
+    if ! objdump -f "$elf" >/dev/null 2>&1; then continue; fi
+    # Work around "Text file busy"
+    cp "$elf" "$elf.tmp"
+    objdump -d "$elf" 2>/dev/null | grep -E '\s0f a2\s+cpuid\s*$' | cut -d: -f1 |
+        while read offset; do
+            echo "Patching $elf@0x$offset"
+            printf "$(printf '\\%o' 0x0f 0x32)" | dd of="$elf.tmp" bs=1 seek="$((0x$offset))" conv=notrunc status=none
+        done
+    mv "$elf.tmp" "$elf"
+done
