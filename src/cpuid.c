@@ -291,11 +291,11 @@ static void cpuid_handle_trap(void *uctx)
     /*
      * Disabling CPUID faulting temporarily for the current thread.
      */
-    if (arch_prctl(ARCH_SET_CPUID, 1) < 0)
+    if (0) if (arch_prctl(ARCH_SET_CPUID, 1) < 0)
         secure_err(1, "Failed to disable CPUID faulting");
 
     cpuid(leaf, subleaf, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
-    if (arch_prctl(ARCH_SET_CPUID, 0) < 0)
+    if (0) if (arch_prctl(ARCH_SET_CPUID, 0) < 0)
         secure_err(1, "Failed to re-enable CPUID faulting");
 
     virtualize_cpuid(leaf, subleaf, &regs);
