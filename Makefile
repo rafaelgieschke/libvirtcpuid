@@ -63,7 +63,7 @@ OBJECTS_DSO = build/dso/dso_signal.o \
 
 OBJECTS_LCD_MASK_FEATURES_GEN = lcd_mask/features_gen.o
 
-all: $(TARGET_DSO) $(TARGET_LD) $(TARGET_FEATURES_JSON);
+all: $(TARGET_DSO) $(TARGET_LD) $(TARGET_FEATURES_JSON) LD_PRELOAD_dlsym.so;
 
 build/ld:
 	mkdir -p $@
@@ -88,6 +88,9 @@ $(TARGET_LD): $(OBJECTS_LD) musl/lib/libc.a
 	$(CC) $^ $(LDFLAGS) $(LDFLAGS_LD) -o $@
 
 $(TARGET_DSO): $(OBJECTS_DSO)
+	$(CC) $^ $(LDFLAGS) $(LDFLAGS_DSO) -o $@
+
+LD_PRELOAD_%.so: LD_PRELOAD_%.c
 	$(CC) $^ $(LDFLAGS) $(LDFLAGS_DSO) -o $@
 
 $(TARGET_FEATURES_JSON_GEN): $(OBJECTS_LCD_MASK_FEATURES_GEN)
