@@ -13,5 +13,5 @@ find "$targetDir" -xdev ! -name libvirtcpuid.so ! -name ld-linux-x86-64.so.2 -ex
             echo "Patching $elf@0x$offset"
             printf "$(printf '\\%o' 0x0f 0x32)" | dd of="$tmp" bs=1 seek="$(($offset))" conv=notrunc status=none
         done
-    test -e "$tmp" && mv "$tmp" "$elf"
+    if test -e "$tmp"; then mv "$tmp" "$elf"; fi
 done
