@@ -4,7 +4,10 @@ targetDir="$1"
 for objdump in objdump eu-objdump ""; do
     command -v "$objdump" && break
 done
-test "$objdump" || echo "error: (eu-)objdump not installed" >&2 && exit 1
+if ! test "$objdump"; then
+    echo "error: (eu-)objdump not installed" >&2
+    exit 1
+fi
 
 find "$targetDir" -xdev ! -name libvirtcpuid.so ! -name ld-linux-x86-64.so.2 -executable -type f | while read -r elf; do
     tmp="$elf.$(basename -- "$0").tmp"
