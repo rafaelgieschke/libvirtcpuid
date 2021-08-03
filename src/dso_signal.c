@@ -202,8 +202,6 @@ static void protect_sigsegv_cpuid_handler(void)
  */
 extern void *_dl_sym (void *handle, const char *name, void *who);
 
-__attribute__((used)) static const void * const force_link_libdl = dlopen;
-
 static void *(*real_dlsym)(void *handle, const char *symbol);
 LIB_EXPORT
 void *dlsym(void *handle, const char *symbol)

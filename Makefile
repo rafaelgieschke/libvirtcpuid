@@ -39,7 +39,7 @@ LDFLAGS_LD += -Wl,-e_dlstart
 
 #############################
 ### DSO flags
-LDFLAGS_DSO += -shared -ldl
+LDFLAGS_DSO += -shared -Wl,--no-as-needed -ldl
 
 
 #############################
