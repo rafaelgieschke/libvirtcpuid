@@ -1,23 +1,17 @@
 #!/bin/sh -u
 targetDir="$1"
 
-for objdump in objdump eu-objdump ""; do
-    command -v "$objdump" && break
-done
-if ! test "$objdump"; then
-    echo "error: (eu-)objdump not installed" >&2
-    exit 1
-fi
+type objdump || exit 1
 
 find "$targetDir" -xdev ! -name libvirtcpuid.so ! -name ld-linux-x86-64.so.2 -executable -type f | while read -r elf; do
     tmp="$elf.$(basename -- "$0").tmp"
     rm -f "$tmp"
-    "$objdump" -d "$elf" 2>/dev/null | grep -E '\s0f a2\s+cpuid\s*$' | cut -d: -f1 |
+    objdump --prefix-addresses --show-raw-insn -dF "$elf" 2>/dev/null | grep -E '\s0f a2\s+cpuid\s*$' | grep -oE '\(File Offset: 0x[^)]+' | cut -d: -f2 |
         while read -r offset; do
             # Work around "Text file busy"
             test -e "$tmp" || cp "$elf" "$tmp"
             echo "Patching $elf@0x$offset"
-            printf "$(printf '\\%o' 0x0f 0x32)" | dd of="$tmp" bs=1 seek="$((0x$offset))" conv=notrunc status=none
+            printf "$(printf '\\%o' 0x0f 0x32)" | dd of="$tmp" bs=1 seek="$(($offset))" conv=notrunc status=none
         done
     test -e "$tmp" && mv "$tmp" "$elf"
 done
