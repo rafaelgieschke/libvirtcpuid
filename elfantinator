@@ -9,7 +9,7 @@ find "$targetDir" -xdev ! -name libvirtcpuid.so ! -name ld-linux-x86-64.so.2 -ex
     objdump --prefix-addresses --show-raw-insn --file-offsets -d "$elf" 2>/dev/null | grep -E '\s0f a2\s+cpuid\s*$' | grep -oE '\(File Offset: 0x[^)]+' | cut -d: -f2 |
         while read -r offset; do
             # Work around "Text file busy"
-            test -e "$tmp" || cp "$elf" "$tmp"
+            if ! test -e "$tmp"; then cp "$elf" "$tmp"; fi
             echo "Patching $elf@0x$offset"
             printf "$(printf '\\%o' 0x0f 0x32)" | dd of="$tmp" bs=1 seek="$(($offset))" conv=notrunc status=none
         done
