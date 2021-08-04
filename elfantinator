@@ -1,6 +1,8 @@
 #!/bin/sh -u
 targetDir="$1"
 
+: "${ELFANTINATOR_FORCE:=}"
+
 type objdump || exit 1
 
 find "$targetDir" -xdev ! -name libvirtcpuid.so -type f | while read -r elf; do
@@ -11,7 +13,7 @@ find "$targetDir" -xdev ! -name libvirtcpuid.so -type f | while read -r elf; do
             if ! test -e "$tmp"; then
                 if test -x "$elf" && ! readelf -l "$elf" | grep -qF '[Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]'; then
                     echo "Warning: Cannot patch $elf" >&2
-                    break
+                    if ! test "ELFANTINATOR_FORCE"; then break; fi
                 fi
                 echo "Patching $elf"
                 # Work around "Text file busy"
