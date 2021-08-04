@@ -3,14 +3,20 @@ targetDir="$1"
 
 type objdump || exit 1
 
-find "$targetDir" -xdev ! -name libvirtcpuid.so ! -name ld-linux-x86-64.so.2 -executable -type f | while read -r elf; do
+find "$targetDir" -xdev ! -name libvirtcpuid.so -type f | while read -r elf; do
     tmp="$elf.$(basename -- "$0").tmp"
     rm -f "$tmp"
     objdump --prefix-addresses --show-raw-insn --file-offsets -d "$elf" 2>/dev/null | grep -E '\s0f a2\s+cpuid\s*$' | grep -oE '\(File Offset: 0x[^)]+' | cut -d: -f2 |
         while read -r offset; do
-            # Work around "Text file busy"
-            if ! test -e "$tmp"; then cp "$elf" "$tmp"; fi
-            echo "Patching $elf@0x$offset"
+            if ! test -e "$tmp"; then
+                if test -x "$elf" && ! readelf -l "$elf" | grep -qF '[Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]'; then
+                    echo "Warning: Cannot patch $elf"
+                    break
+                fi
+                # Work around "Text file busy"
+                cp "$elf" "$tmp"
+            fi
+            echo "Patching $elf @ 0x$offset"
             printf "$(printf '\\%o' 0x0f 0x32)" | dd of="$tmp" bs=1 seek="$(($offset))" conv=notrunc status=none
         done
     if test -e "$tmp"; then mv "$tmp" "$elf"; fi
