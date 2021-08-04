@@ -10,13 +10,13 @@ find "$targetDir" -xdev ! -name libvirtcpuid.so -type f | while read -r elf; do
         while read -r offset; do
             if ! test -e "$tmp"; then
                 if test -x "$elf" && ! readelf -l "$elf" | grep -qF '[Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]'; then
-                    echo "Warning: Cannot patch $elf"
+                    echo "Warning: Cannot patch $elf" >&2
                     break
                 fi
+                echo "Patching $elf"
                 # Work around "Text file busy"
                 cp "$elf" "$tmp"
             fi
-            echo "Patching $elf @ 0x$offset"
             printf "$(printf '\\%o' 0x0f 0x32)" | dd of="$tmp" bs=1 seek="$(($offset))" conv=notrunc status=none
         done
     if test -e "$tmp"; then mv "$tmp" "$elf"; fi
