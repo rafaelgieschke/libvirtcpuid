@@ -8,7 +8,7 @@ type objdump || exit 1
 find "$targetDir" -xdev ! -name libvirtcpuid.so -type f | while read -r elf; do
     tmp="$elf.$(basename -- "$0").tmp"
     rm -f "$tmp"
-    # objdump --prefix-addresses --show-raw-insn --file-offsets -d "$elf" 2>/dev/null | sed -nE 's/.*\(File Offset: ([^)]+)\)\s+0f a2\s+cpuid\s*$/\1/p'
+    # objdump --prefix-addresses --show-raw-insn --file-offsets -d "$elf" 2>/dev/null | sed -nE 's/^.*\(File Offset: ([^)]+)\)\s+0f a2\s+cpuid\s*$/\1/p'
     objdump --prefix-addresses --show-raw-insn --file-offsets -d "$elf" 2>/dev/null | grep -E '\s0f a2\s+cpuid\s*$' | grep -oE '\(File Offset: 0x[^)]+' | cut -d: -f2 |
         while read -r offset; do
             if ! test -e "$tmp"; then
