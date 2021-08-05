@@ -213,7 +213,7 @@ void *dlsym(void *handle, const char *symbol)
          * the dlsym function. That's because the dlsym symbol may correspond
          * to another library's dlsym (e.g., libvirttime).
          */
-        real_dlsym = _dl_sym(RTLD_NEXT, "dlsym", __builtin_return_address(0));
+        real_dlsym = _dl_sym(RTLD_NEXT, "dlsym", dlsym);
     }
 
     /* The JVM gets sigaction via dlsym */
