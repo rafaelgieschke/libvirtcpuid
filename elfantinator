@@ -1,26 +1,52 @@
 #!/bin/sh -u
 targetDir="$1"
+inst_regex="${2:-cpuid}"
 
 : "${ELFANTINATOR_FORCE:=}"
+: "${force:=$ELFANTINATOR_FORCE}"
 
-type objdump || exit 1
+: "${dry_run:=}"
+: "${force:=}"
+: "${verbose:=}"
 
-find "$targetDir" -xdev ! -name libvirtcpuid.so -type f | while read -r elf; do
-    tmp="$elf.$(basename -- "$0").tmp"
-    rm -f "$tmp"
-    # objdump --prefix-addresses --show-raw-insn --file-offsets -d "$elf" 2>/dev/null | sed -nE 's/^.*\(File Offset: ([^)]+)\)\s+0f a2\s+cpuid\s*$/\1/p'
-    objdump --prefix-addresses --show-raw-insn --file-offsets -d "$elf" 2>/dev/null | grep -E '\s0f a2\s+cpuid\s*$' | grep -oE '\(File Offset: 0x[^)]+' | cut -d: -f2 |
-        while read -r offset; do
-            if ! test -e "$tmp"; then
-                if test -x "$elf" && ! readelf -l "$elf" | grep -qF '[Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]'; then
+type objdump readelf || exit 1
+
+excluded="libvirtcpuid.so"
+dynamic_linker="[Requesting program interpreter: /lib64/ld-linux-x86-64.so.2]"
+# regex='^.*\(File Offset: ([^)]+)\)\s+0f a2\s+cpuid\s*$'
+regex='^.*\(File Offset: ([^)]+)\)\s+([0-9a-f]{2} )*[0-9a-f]{2}\s*\t'"$inst_regex"'(\s+[^ ]*)?\s*$'
+replacement="0f 32" # rdmsr
+
+_verbose() {
+    if test "$verbose"; then
+        "$@"
+    fi
+}
+
+_not_dry() {
+    if ! test "$dry_run"; then
+        "$@"
+    fi
+}
+
+find "$targetDir" -xdev ! -name "$excluded" -type f | while read -r elf; do
+    objdump --prefix-addresses --file-offsets --show-raw-insn -d "$elf" 2>/dev/null |
+        sed -nE "s/$regex/\\1 &/p" | {
+        tmp=""
+        while read -r offset line; do
+            if ! test "$tmp"; then
+                if test -x "$elf" && ! readelf -l "$elf" | grep -qF "$dynamic_linker"; then
                     echo "Warning: Cannot patch $elf" >&2
-                    if ! test "$ELFANTINATOR_FORCE"; then break; fi
+                    if ! test "$force"; then break; else echo "Forcing..."; fi
                 fi
                 echo "Patching $elf"
                 # Work around "Text file busy"
-                cp "$elf" "$tmp"
+                tmp="$elf.$(basename -- "$0").tmp"
+                _not_dry cp "$elf" "$tmp"
             fi
-            printf "$(printf '\\%o' 0x0f 0x32)" | dd of="$tmp" bs=1 seek="$(($offset))" conv=notrunc status=none
+            _verbose printf '  %s\n' "$line"
+            printf "$(printf '\\%o' $(printf '0x%s ' $replacement))" | _not_dry dd of="$tmp" bs=1 seek="$((offset))" conv=notrunc status=none
         done
-    if test -e "$tmp"; then mv "$tmp" "$elf"; fi
+        if test "$tmp"; then _not_dry mv "$tmp" "$elf"; fi
+    }
 done
