@@ -45,6 +45,8 @@
 static bool emit_debug;
 static bool suppress_output;
 
+#define arch_prctl(...) 1
+
 #define debug(s, ...) ({ if (emit_debug && !suppress_output) warnx(s, ##__VA_ARGS__); })
 
 #define secure_err(exit_code, fmt, ...) ({  \
@@ -291,11 +293,11 @@ static void cpuid_handle_trap(void *uctx)
     /*
      * Disabling CPUID faulting temporarily for the current thread.
      */
-    if (0) if (arch_prctl(ARCH_SET_CPUID, 1) < 0)
+    if (arch_prctl(ARCH_SET_CPUID, 1) < 0)
         secure_err(1, "Failed to disable CPUID faulting");
 
     cpuid(leaf, subleaf, &regs.eax, &regs.ebx, &regs.ecx, &regs.edx);
-    if (0) if (arch_prctl(ARCH_SET_CPUID, 0) < 0)
+    if (arch_prctl(ARCH_SET_CPUID, 0) < 0)
         secure_err(1, "Failed to re-enable CPUID faulting");
 
     virtualize_cpuid(leaf, subleaf, &regs);
@@ -379,7 +381,7 @@ void cpuid_init(bool secure)
     init_cpuid_mask(conf);
     setup_sigsegv_cpuid_handler();
 
-    if (0) if (arch_prctl(ARCH_SET_CPUID, 0) < 0)
+    if (arch_prctl(ARCH_SET_CPUID, 0) < 0)
         secure_err(1, "Failed to enable CPUID faulting");
 
     /*
